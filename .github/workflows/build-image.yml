@@ -1,0 +1,74 @@
+name: 构建Docker镜像
+
+on:
+  workflow_dispatch:  # 支持手动触发
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: cuhksz-itso-dev/qwen-image-edit-svc
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 生成时间戳标签
+      id: timestamp
+      run: |
+        TIMESTAMP=$(date +%Y%m%d-%H%M)
+        echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+        echo "生成的时间戳标签: $TIMESTAMP"
+
+    - name: 登录到GitHub Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 设置Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: 提取镜像元数据
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=raw,value=${{ steps.timestamp.outputs.timestamp }}
+          type=raw,value=latest
+        labels: |
+          org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+          org.opencontainers.image.description=基于qwen-image-edit的API封装服务。
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+    - name: 构建并推送Docker镜像
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+    - name: 输出镜像信息
+      if: github.event_name != 'pull_request'
+      run: |
+        echo "🎉 Docker镜像构建成功!"
+        echo "📦 镜像名称: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+        echo "🏷️  标签: ${{ steps.timestamp.outputs.timestamp }}, latest"
+        echo "🔗 镜像拉取命令:"
+        echo "   docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.timestamp.outputs.timestamp }}"
+        echo "   docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+        echo "ℹ️  注意：首次拉取可能需要先登录到GitHub Container Registry"
+        echo "   echo \$GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin"

@@ -30,8 +30,3 @@ ENV WORKERS=1
 
 # 启动命令
 CMD ["uv run", "main.py"]
-
-# 添加标签
-LABEL maintainer="Qwen Image Edit Service"
-LABEL description="基于qwen-image-edit的API封装服务"
-LABEL version="1.0.0"
