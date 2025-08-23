@@ -21,7 +21,7 @@ jobs:
     - name: 生成时间戳标签
       id: timestamp
       run: |
-        TIMESTAMP=$(date +%Y%m%d-%H%M)
+        TIMESTAMP=$(TZ=Asia/Shanghai date +%Y%m%d-%H%M)
         echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
         echo "生成的时间戳标签: $TIMESTAMP"
 
@@ -35,6 +35,8 @@ jobs:
 
     - name: 设置Docker Buildx
       uses: docker/setup-buildx-action@v3
+      with:
+        platforms: linux/amd64
 
     - name: 提取镜像元数据
       id: meta
