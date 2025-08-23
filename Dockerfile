@@ -1,5 +1,5 @@
 # 使用官方CUDA基础镜像，支持PyTorch
-FROM docker.gitfetch.dev/nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
+FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
 
 # 设置工作目录
 WORKDIR /app
