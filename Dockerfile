@@ -13,7 +13,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 COPY pyproject.toml uv.lock* ./
 
 # 安装Python依赖
-RUN uv sync --no-dev
+RUN /root/.local/bin/uv sync --no-dev
 
 # 复制应用代码
 COPY main.py ./
