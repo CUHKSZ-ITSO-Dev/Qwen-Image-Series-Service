@@ -5,9 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "asyncio-pool>=0.6.0",
     "diffusers[torch]",
+    "fastapi>=0.116.1",
+    "numpy>=2.3.2",
+    "pillow>=11.3.0",
+    "pydantic>=2.11.7",
+    "python-multipart>=0.0.20",
     "torchvision>=0.23.0",
     "transformers>=4.55.4",
+    "uvicorn[standard]>=0.35.0",
 ]
 
 [tool.uv]
@@ -19,4 +26,6 @@ diffusers = { git = "https://github.com/huggingface/diffusers" }
 [dependency-groups]
 dev = [
     "modelscope>=1.29.1",
+    "requests>=2.31.0",
+    "ruff>=0.12.10",
 ]
