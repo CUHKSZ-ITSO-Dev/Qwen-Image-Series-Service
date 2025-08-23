@@ -5,7 +5,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: cuhksz-itso-dev/qwen-image-edit-svc
+  IMAGE_NAME: nickwilde18/qwen-image-edit-svc
 
 jobs:
   build:
