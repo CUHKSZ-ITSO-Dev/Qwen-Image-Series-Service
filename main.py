@@ -2,9 +2,9 @@ import os
 from PIL import Image
 import torch
 
-from modelscope import QwenImageEditPipeline
+from diffusers import QwenImageEditPipeline
 
-pipeline = QwenImageEditPipeline.from_pretrained("Qwen/Qwen-Image-Edit")
+pipeline = QwenImageEditPipeline.from_pretrained("./model")
 print("pipeline loaded")
 pipeline.to(torch.bfloat16)
 pipeline.to("cuda")
