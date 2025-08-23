@@ -4,6 +4,8 @@ FROM docker.gitfetch.dev/nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
 # 设置工作目录
 WORKDIR /app
 
+RUN apt update && apt install -y curl
+
 # 安装系统依赖
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
