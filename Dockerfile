@@ -4,7 +4,8 @@ FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
 # 设置工作目录
 WORKDIR /app
 
-RUN apt update && apt install -y curl git tzdata vim
+RUN DEBIAN_FRONTEND=noninteractive apt update && \
+    DEBIAN_FRONTEND=noninteractive apt install -y curl git tzdata vim
 
 # 设置时区为Asia/Shanghai
 ENV TZ=Asia/Shanghai
