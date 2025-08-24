@@ -34,5 +34,5 @@ ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV WORKERS=1
 
-# 启动命令
-CMD ["serve", "run", "main:qwen_image_edit_service"]
+# 启动命令 - 指向新的 deployment_graph 对象
+CMD ["serve", "run", "main:deployment_graph"]
