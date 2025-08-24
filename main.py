@@ -1,75 +1,176 @@
+import base64
 import io
+import time
 from typing import Annotated
 
 import torch
-from diffusers import QwenImageEditPipeline
-from fastapi import FastAPI, File, Form, UploadFile
-from fastapi.responses import StreamingResponse
+from diffusers import DiffusionPipeline, QwenImageEditPipeline
+from fastapi import FastAPI, File, Form, UploadFile, Depends
+from fastapi.responses import JSONResponse
 from PIL import Image
+from pydantic import BaseModel
 from ray import serve
 
-app = FastAPI()
 
+@serve.deployment(ray_actor_options={"num_gpus": 1 if torch.cuda.is_available() else 0})
+class ImageEditService:
+    """专门用于图像编辑的模型服务：Qwen-Image-Edit"""
 
-@serve.deployment(
-    ray_actor_options={"num_gpus": 1 if torch.cuda.is_available() else 0},
-    max_concurrent_queries=16,
-)
-@serve.ingress(app)
-class QwenImageEditService:
     def __init__(self) -> None:
         self.pipeline = QwenImageEditPipeline.from_pretrained(
-            "/model", torch_dtype=torch.bfloat16
+            "/qwen-image-edit", torch_dtype=torch.bfloat16
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.pipeline.to(self.device)
-        self.default_params = {
-            "generator": torch.manual_seed(0),
-            "true_cfg_scale": 4.0,
-            "negative_prompt": " ",
-            "num_inference_steps": 50,
-        }
 
-    @serve.batch(max_batch_size=4, batch_wait_timeout_s=0.1)
-    async def batch_generate(self, requests: list[dict]) -> list[Image.Image]:
-        """
-        批处理请求。由 FastAPI 内部发起。
-
-        这个方法会接收一批请求，每个请求都是一个字典。
-        然后它会解包这些数据，以列表形式传递给 pipeline。
-        """
-        images = [r["image"] for r in requests]
-        prompts = [r["prompt"] for r in requests]
-        with torch.inference_mode():
-            model_output = self.pipeline(
-                image=images, prompt=prompts, **self.default_params
+    @serve.batch(max_batch_size=4, batch_wait_timeout_s=8)
+    async def batch_edit(self, requests: list[dict]) -> list[Image.Image]:
+        full_requests = []
+        for r in requests:
+            seed = r.get("seed", 42)
+            full_requests.append(
+                {
+                    "image": r["image"],
+                    "prompt": r["prompt"],
+                    "negative_prompt": r.get("negative_prompt", " "),
+                    "num_inference_steps": r.get("num_inference_steps", 50),
+                    "true_cfg_scale": r.get("true_cfg_scale", 4.0),
+                    "generator": torch.Generator(device=self.device).manual_seed(seed),
+                }
             )
+
+        if not full_requests:
+            return []
+
+        keys = full_requests[0].keys()
+        batch_params = {key: [d[key] for d in full_requests] for key in keys}
+
+        with torch.inference_mode():
+            model_output = self.pipeline(**batch_params)
             return model_output.images
 
-    @app.post("/")
-    async def generate(
-        self,
-        image: Annotated[UploadFile, File(...)],
-        prompt: Annotated[str, Form("")],
-    ) -> StreamingResponse:
-        """
-        FastAPI 端点。
 
-        它会将请求数据预处理后，调用批处理方法进行推理。
-        """
-        init_image = Image.open(io.BytesIO(await image.read())).convert("RGB")
+@serve.deployment(ray_actor_options={"num_gpus": 1 if torch.cuda.is_available() else 0})
+class ImageGenerationService:
+    """专门用于图像生成的模型服务：Qwen-Image"""
 
-        # 异步调用批处理方法
-        result_image = await self.batch_generate.remote(
-            {"image": init_image, "prompt": prompt}
+    def __init__(self) -> None:
+        self.pipeline = DiffusionPipeline.from_pretrained(
+            "/qwen-image", torch_dtype=torch.bfloat16
         )
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.pipeline.to(self.device)
 
-        # 将生成的图片转换为流式响应
-        img_byte_arr = io.BytesIO()
-        result_image.save(img_byte_arr, format="PNG")
-        img_byte_arr.seek(0)
-        return StreamingResponse(img_byte_arr, media_type="image/png")
+    @serve.batch(max_batch_size=4, batch_wait_timeout_s=8)
+    async def batch_generate(self, requests: list[dict]) -> list[Image.Image]:
+        full_requests = []
+        for r in requests:
+            seed = r.get("seed", 42)
+            full_requests.append(
+                {
+                    "prompt": r["prompt"],
+                    "negative_prompt": r.get("negative_prompt", ""),
+                    "num_inference_steps": r.get("num_inference_steps", 50),
+                    "width": r.get("width", 1664),
+                    "height": r.get("height", 928),
+                    "true_cfg_scale": r.get("true_cfg_scale", 4.0),
+                    "generator": torch.Generator(device=self.device).manual_seed(seed),
+                }
+            )
+
+        if not full_requests:
+            return []
+
+        # 3. 将字典列表转换列表字典 (您的问题的核心)
+        keys = full_requests[0].keys()
+        batch_params = {key: [d[key] for d in full_requests] for key in keys}
+
+        with torch.inference_mode():
+            model_output = self.pipeline(**batch_params)
+            return model_output.images
 
 
-# 绑定 Ray Serve deployment
-qwen_image_edit_service = QwenImageEditService.bind()
+class EditRequest(BaseModel):
+    """图像编辑请求的表单字段"""
+
+    prompt: str
+    negative_prompt: str | None = None
+    num_inference_steps: int | None = None
+    true_cfg_scale: float | None = None
+    seed: int | None = None
+
+
+class GenerationRequest(BaseModel):
+    """OpenAI 兼容的图像生成请求体"""
+
+    prompt: str
+    model: str | None = None
+    width: int
+    height: int
+    negative_prompt: str | None = ""
+    num_inference_steps: int | None = 50
+    true_cfg_scale: float | None = 4.0
+    seed: int | None = 42
+
+
+app = FastAPI()
+edit_deployment = ImageEditService.bind()
+generation_deployment = ImageGenerationService.bind()
+
+
+def form_body(
+    prompt: Annotated[str, Form(...)],
+    negative_prompt: Annotated[str | None, Form(None)] = None,
+    num_inference_steps: Annotated[int | None, Form(None)] = None,
+    true_cfg_scale: Annotated[float | None, Form(None)] = None,
+    seed: Annotated[int | None, Form(None)] = None,
+) -> EditRequest:
+    """依赖函数，将 Form 字段解析并校验为 Pydantic 模型"""
+    return EditRequest(
+        prompt=prompt,
+        negative_prompt=negative_prompt,
+        num_inference_steps=num_inference_steps,
+        true_cfg_scale=true_cfg_scale,
+        seed=seed,
+    )
+
+
+@app.post("/v1/images/edits")
+async def edit_image(
+    image: Annotated[UploadFile, File(...)], request: EditRequest = Depends(form_body)
+) -> JSONResponse:
+    """图像编辑端点"""
+    init_image = Image.open(io.BytesIO(await image.read())).convert("RGB")
+
+    # 从 Pydantic 模型创建载荷，exclude_none=True 会自动过滤掉未提供的可选参数
+    payload = request.model_dump(exclude_none=True)
+    payload["image"] = init_image
+
+    result_image = await edit_deployment.batch_edit.remote(payload)
+
+    buffered = io.BytesIO()
+    result_image.save(buffered, format="PNG")
+    b64_json = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+    return JSONResponse(
+        content={"created": int(time.time()), "data": [{"b64_json": b64_json}]}
+    )
+
+
+@app.post("/v1/images/generations")
+async def generate_image(request: GenerationRequest) -> JSONResponse:
+    """图像生成端点"""
+    request_dict = request.model_dump(exclude_none=True)
+
+    result_image = await generation_deployment.batch_generate.remote(request_dict)
+
+    buffered = io.BytesIO()
+    result_image.save(buffered, format="PNG")
+    b64_json = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+    return JSONResponse(
+        content={"created": int(time.time()), "data": [{"b64_json": b64_json}]}
+    )
+
+
+deployment_graph = serve.ingress(app)
