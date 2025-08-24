@@ -5,16 +5,12 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "asyncio-pool>=0.6.0",
     "diffusers[torch]",
     "fastapi>=0.116.1",
-    "numpy>=2.3.2",
     "pillow>=11.3.0",
-    "pydantic>=2.11.7",
-    "python-multipart>=0.0.20",
+    "ray[serve]>=2.48.0",
     "torchvision>=0.23.0",
     "transformers>=4.55.4",
-    "uvicorn[standard]>=0.35.0",
 ]
 
 [tool.uv]
@@ -26,6 +22,63 @@ diffusers = { git = "https://github.com/huggingface/diffusers" }
 [dependency-groups]
 dev = [
     "modelscope>=1.29.1",
-    "requests>=2.31.0",
     "ruff>=0.12.10",
 ]
+
+[tool.ruff]
+# Ruff configuration
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "ANN", # flake8-annotations - 检查类型注解
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "D",   # pydocstyle - 文档字符串检查
+    "DJ",  # flake8-django - Django 特定的检查
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "ISC", # flake8-implicit-str-concat - 隐式字符串连接检查
+    "N",   # pep8-naming - 命名约定
+    "PL",  # pylint - 部分Pylint规则
+    "UP",  # pyupgrade
+    "W",   # pycodestyle warnings
+]
+ignore = [
+    "ANN002",  # 禁用检查“缺少 *args 的类型注解”
+    "ANN003",  # 禁用检查“缺少 **kwargs 的类型注解”
+    "D100",    # 禁用检查“公共模块缺少文档字符串”
+    "D101",    # 禁用检查“公共类缺少文档字符串”
+    "D102",    # 禁用检查“公共方法缺少文档字符串”
+    "D103",    # 禁用检查“公共函数缺少文档字符串”
+    "D105",    # 禁用检查“魔术方法缺少文档字符串”
+    "D106",    # 禁用检查“公共嵌套类缺少文档字符串”
+    "D107",    # 禁用检查“__init__ 缺少文档字符串”
+    "D203",    # 禁用检查“文档字符串和类定义之间必须空一行”
+    "D212",    # 禁用检查“多行摘要必须要从第一行开始”
+    "D400",    # 禁用检查“多行文档字符串的第一行必须要以.结尾”
+    "D401",    # 禁用检查“文档字符串非祈使句开头”
+    "D415",    # 禁用检查“模块中缺少文档字符串”
+    "E501",    # 禁用检查“行太长”
+    "F405",    # 禁用检查“禁止*导入”
+    "PLC0415",  # 禁用检查“延迟导入，避免循环依赖”
+    "PLR2004",  # 禁用检查“检查在比较中是否使用未命名的数值常量（“魔术”）值”
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ChatGPT_Azure"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10 # 用于C901 (复杂度太高) 规则
+
+[tool.ruff.lint.pylint]
+max-branches = 15 # PLR0912 if-else分支不得过多
+max-returns = 10 # PLR0911 return语句不得过多
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

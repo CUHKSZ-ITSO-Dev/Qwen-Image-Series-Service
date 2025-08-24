@@ -35,4 +35,4 @@ ENV PORT=8000
 ENV WORKERS=1
 
 # 启动命令
-CMD ["/root/.local/bin/uv", "run", "main.py"]
+CMD ["serve", "run", "main:qwen_image_edit_service"]
