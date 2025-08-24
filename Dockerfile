@@ -36,4 +36,5 @@ ENV PORT=8000
 ENV WORKERS=1
 
 # 启动命令 - 指向新的 deployment_graph 对象
+ENV PATH="/root/.local/bin:$PATH"
 CMD ["serve", "run", "main:deployment_graph"]
