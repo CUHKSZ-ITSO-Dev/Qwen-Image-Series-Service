@@ -35,6 +35,8 @@ ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV WORKERS=1
 
+# 激活虚拟环境
+RUN source .venv/bin/activate
+
 # 启动命令 - 指向新的 deployment_graph 对象
-ENV PATH="/root/.local/bin:$PATH"
 CMD ["serve", "run", "main:deployment_graph"]
