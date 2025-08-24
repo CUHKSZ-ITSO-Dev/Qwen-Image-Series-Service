@@ -19,6 +19,7 @@ COPY pyproject.toml uv.lock* ./
 
 # 安装Python依赖
 RUN /root/.local/bin/uv sync --no-dev
+RUN find / -name "serve"
 
 # 复制应用代码
 COPY main.py ./
@@ -36,4 +37,4 @@ ENV PORT=8000
 ENV WORKERS=1
 
 # 启动命令 - 指向新的 deployment_graph 对象
-CMD ["/root/.local/bin/serve", "run", "main:deployment_graph"]
+# CMD ["/root/.local/bin/serve", "run", "main:deployment_graph"]
