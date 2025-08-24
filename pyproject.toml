@@ -13,9 +13,6 @@ dependencies = [
     "transformers>=4.55.4",
 ]
 
-[tool.uv]
-index-url = "https://pypi.tuna.tsinghua.edu.cn/simple/"
-
 [tool.uv.sources]
 diffusers = { git = "https://github.com/huggingface/diffusers" }
 
