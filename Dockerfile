@@ -36,5 +36,5 @@ ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV WORKERS=1
 
-# 启动命令 - 指向新的 deployment_graph 对象
-# CMD ["/root/.local/bin/serve", "run", "main:deployment_graph"]
+# 启动命令
+# CMD ["/app/.venv/bin/serve", "run", "main:deployment_graph"]
