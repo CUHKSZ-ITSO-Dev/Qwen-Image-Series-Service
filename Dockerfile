@@ -27,14 +27,10 @@ COPY main.py ./
 # 暴露端口
 EXPOSE 8000
 
-# 健康检查
-# HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
-#     CMD curl -f http://localhost:8000/health || exit 1
-
 # 设置默认环境变量
 ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV WORKERS=1
 
 # 启动命令
-# CMD ["/app/.venv/bin/serve", "run", "main:deployment_graph"]
+CMD ["/app/.venv/bin/serve", "run", "main:deployment_graph"]
