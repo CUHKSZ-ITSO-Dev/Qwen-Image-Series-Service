@@ -19,7 +19,6 @@ COPY pyproject.toml uv.lock* ./
 
 # 安装Python依赖
 RUN /root/.local/bin/uv sync --no-dev
-RUN find / -name "serve"
 
 # 复制应用代码
 COPY main.py ./

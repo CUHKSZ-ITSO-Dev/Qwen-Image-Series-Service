@@ -136,49 +136,54 @@ def form_body(
     )
 
 
-@app.post("/v1/images/edits")
-async def edit_image(
-    image: Annotated[UploadFile, File(...)],
-    request: Annotated[EditRequest, Depends(form_body)],
-) -> JSONResponse:
-    """图像编辑端点"""
-    init_image = Image.open(io.BytesIO(await image.read())).convert("RGB")
-
-    # 从 Pydantic 模型创建载荷，exclude_none=True 会自动过滤掉未提供的可选参数
-    payload = request.model_dump(exclude_none=True)
-    payload["image"] = init_image
-
-    result_image = await edit_deployment.batch_edit.remote(payload)
-
-    buffered = io.BytesIO()
-    result_image.save(buffered, format="PNG")
-    b64_json = base64.b64encode(buffered.getvalue()).decode("utf-8")
-
-    return JSONResponse(
-        content={"created": int(time.time()), "data": [{"b64_json": b64_json}]}
-    )
-
-
-@app.post("/v1/images/generations")
-async def generate_image(request: GenerationRequest) -> JSONResponse:
-    """图像生成端点"""
-    request_dict = request.model_dump(exclude_none=True)
-
-    result_image = await generation_deployment.batch_generate.remote(request_dict)
-
-    buffered = io.BytesIO()
-    result_image.save(buffered, format="PNG")
-    b64_json = base64.b64encode(buffered.getvalue()).decode("utf-8")
-
-    return JSONResponse(
-        content={"created": int(time.time()), "data": [{"b64_json": b64_json}]}
-    )
-
-
 @serve.deployment
 @serve.ingress(app)
 class APIIngress:
-    pass
+    def __init__(self) -> None:
+        self.edit_deployment = ImageEditService.bind()
+        self.generation_deployment = ImageGenerationService.bind()
+
+    @app.post("/v1/images/edits")
+    async def edit_image(
+        self,
+        image: Annotated[UploadFile, File(...)],
+        request: Annotated[EditRequest, Depends(form_body)],
+    ) -> JSONResponse:
+        """图像编辑端点"""
+        init_image = Image.open(io.BytesIO(await image.read())).convert("RGB")
+
+        # 从 Pydantic 模型创建载荷，exclude_none=True 会自动过滤掉未提供的可选参数
+        payload = request.model_dump(exclude_none=True)
+        payload["image"] = init_image
+
+        result_image_list = await self.edit_deployment.batch_edit.remote(payload)
+        result_image = result_image_list[0]
+
+        buffered = io.BytesIO()
+        result_image.save(buffered, format="PNG")
+        b64_json = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+        return JSONResponse(
+            content={"created": int(time.time()), "data": [{"b64_json": b64_json}]}
+        )
+
+    @app.post("/v1/images/generations")
+    async def generate_image(self, request: GenerationRequest) -> JSONResponse:
+        """图像生成端点"""
+        request_dict = request.model_dump(exclude_none=True)
+
+        result_image_list = await self.generation_deployment.batch_generate.remote(
+            request_dict
+        )
+        result_image = result_image_list[0]
+
+        buffered = io.BytesIO()
+        result_image.save(buffered, format="PNG")
+        b64_json = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+        return JSONResponse(
+            content={"created": int(time.time()), "data": [{"b64_json": b64_json}]}
+        )
 
 
 deployment_graph = APIIngress.bind()
