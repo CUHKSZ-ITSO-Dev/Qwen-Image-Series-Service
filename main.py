@@ -121,10 +121,10 @@ generation_deployment = ImageGenerationService.bind()
 
 def form_body(
     prompt: Annotated[str, Form(...)],
-    negative_prompt: Annotated[str | None, Form(None)] = None,
-    num_inference_steps: Annotated[int | None, Form(None)] = None,
-    true_cfg_scale: Annotated[float | None, Form(None)] = None,
-    seed: Annotated[int | None, Form(None)] = None,
+    negative_prompt: Annotated[str | None, Form()] = None,
+    num_inference_steps: Annotated[int | None, Form()] = None,
+    true_cfg_scale: Annotated[float | None, Form()] = None,
+    seed: Annotated[int | None, Form()] = None,
 ) -> EditRequest:
     """依赖函数，将 Form 字段解析并校验为 Pydantic 模型"""
     return EditRequest(
