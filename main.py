@@ -1,5 +1,6 @@
 import base64
 import io
+import logging
 import time
 from typing import Annotated
 
@@ -10,7 +11,9 @@ from fastapi.responses import JSONResponse
 from PIL import Image
 from pydantic import BaseModel
 from ray import serve
+from ray.serve.handle import DeploymentHandle
 
+logger = logging.getLogger(__name__)
 
 class BaseService:
     """封装通用批处理逻辑的基类"""
@@ -47,6 +50,7 @@ class ImageEditService(BaseService):
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.pipeline.to(self.device)
+        logger.info("图像编辑服务初始化完成。")
 
     def _prepare_request(self, r: dict) -> dict:
         seed = r.get("seed", 42)
@@ -74,6 +78,7 @@ class ImageGenerationService(BaseService):
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.pipeline.to(self.device)
+        logger.info("图像生成服务初始化完成。")
 
     def _prepare_request(self, r: dict) -> dict:
         seed = r.get("seed", 42)
@@ -115,8 +120,6 @@ class GenerationRequest(BaseModel):
 
 
 app = FastAPI()
-edit_deployment = ImageEditService.bind()
-generation_deployment = ImageGenerationService.bind()
 
 
 def form_body(
@@ -139,9 +142,13 @@ def form_body(
 @serve.deployment
 @serve.ingress(app)
 class APIIngress:
-    def __init__(self) -> None:
-        self.edit_deployment = ImageEditService.bind()
-        self.generation_deployment = ImageGenerationService.bind()
+    def __init__(
+        self,
+        edit_deployment: DeploymentHandle,
+        generation_deployment: DeploymentHandle,
+    ) -> None:
+        self.edit_deployment = edit_deployment
+        self.generation_deployment = generation_deployment
 
     @app.post("/v1/images/edits")
     async def edit_image(
@@ -186,4 +193,7 @@ class APIIngress:
         )
 
 
-deployment_graph = APIIngress.bind()
+deployment_graph = APIIngress.bind(
+    edit_deployment=ImageEditService.bind(),
+    generation_deployment=ImageGenerationService.bind(),
+)
