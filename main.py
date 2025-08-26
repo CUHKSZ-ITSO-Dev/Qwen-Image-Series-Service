@@ -1,6 +1,5 @@
 import base64
 import io
-import logging
 import time
 from typing import Annotated
 
@@ -13,7 +12,6 @@ from pydantic import BaseModel
 from ray import serve
 from ray.serve.handle import DeploymentHandle
 
-logger = logging.getLogger(__name__)
 
 class BaseService:
     """封装通用批处理逻辑的基类"""
@@ -34,6 +32,10 @@ class BaseService:
         keys = full_requests[0].keys()
         batch_params = {key: [d[key] for d in full_requests] for key in keys}
 
+        # 宽、高似乎只能是固定一个数，那就只能以第一个请求为准了
+        batch_params["height"] = full_requests[0]["height"]
+        batch_params["width"] = full_requests[0]["width"]
+
         # 3. 调用 self.pipeline (由子类提供)
         with torch.inference_mode():
             model_output = self.pipeline(**batch_params)
@@ -50,7 +52,7 @@ class ImageEditService(BaseService):
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.pipeline.to(self.device)
-        logger.info("图像编辑服务初始化完成。")
+        print("图像编辑服务初始化完成。")
 
     def _prepare_request(self, r: dict) -> dict:
         seed = r.get("seed", 42)
@@ -78,7 +80,7 @@ class ImageGenerationService(BaseService):
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.pipeline.to(self.device)
-        logger.info("图像生成服务初始化完成。")
+        print("图像生成服务初始化完成。")
 
     def _prepare_request(self, r: dict) -> dict:
         seed = r.get("seed", 42)
