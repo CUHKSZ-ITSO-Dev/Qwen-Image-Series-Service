@@ -175,4 +175,10 @@ async def generate_image(request: GenerationRequest) -> JSONResponse:
     )
 
 
-deployment_graph = serve.ingress(app)
+@serve.deployment
+@serve.ingress(app)
+class APIIngress:
+    pass
+
+
+deployment_graph = APIIngress.bind()
