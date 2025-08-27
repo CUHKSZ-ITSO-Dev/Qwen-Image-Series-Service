@@ -21,7 +21,7 @@ COPY pyproject.toml uv.lock* ./
 RUN /root/.local/bin/uv sync --no-dev
 
 # 复制应用代码
-COPY main.py ./
+COPY main.py service.py ./
 
 # 暴露端口
 EXPOSE 8000
