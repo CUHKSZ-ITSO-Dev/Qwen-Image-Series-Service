@@ -5,7 +5,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: nickwilde18/qwen-image-edit-svc
+  IMAGE_NAME: cuhksz-itso-dev/qwen-image-series-svc
 
 jobs:
   build:
@@ -48,7 +48,6 @@ jobs:
           type=raw,value=latest
         labels: |
           org.opencontainers.image.title=${{ env.IMAGE_NAME }}
-          org.opencontainers.image.description=基于qwen-image-edit的API封装服务。
           org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
     - name: 构建并推送Docker镜像
