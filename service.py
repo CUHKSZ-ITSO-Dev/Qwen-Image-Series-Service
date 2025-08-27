@@ -1,3 +1,5 @@
+import os
+
 import torch
 from diffusers import QwenImageEditPipeline, QwenImagePipeline
 from PIL import Image
@@ -25,7 +27,8 @@ class ImageEditService(_BaseService):
 
     def __init__(self) -> None:
         self.pipeline = QwenImageEditPipeline.from_pretrained(
-            "/qwen-image-edit", torch_dtype=torch.bfloat16
+            os.getenv("QWEN_IMAGE_EDIT_LOCATION", "/qwen-image-edit"),
+            torch_dtype=torch.bfloat16,
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.pipeline.to(self.device)
@@ -51,7 +54,7 @@ class ImageGenerationService(_BaseService):
 
     def __init__(self) -> None:
         self.pipeline = QwenImagePipeline.from_pretrained(
-            "/qwen-image", torch_dtype=torch.bfloat16
+            os.getenv("QWEN_IMAGE_LOCATION", "/qwen-image"), torch_dtype=torch.bfloat16
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.pipeline.to(self.device)
@@ -70,4 +73,3 @@ class ImageGenerationService(_BaseService):
 
     async def generate(self, request: dict) -> Image.Image:
         return await self._process_single(request)
-
