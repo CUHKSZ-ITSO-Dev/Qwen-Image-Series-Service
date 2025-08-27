@@ -19,7 +19,7 @@ Web 服务器选用 FastAPI。
 您可以使用 Docker 来运行此服务：
 
 ```bash
-docker build -t qwen-image-service .
+docker build -t qwen-image-series-svc .
 docker run -p 8000:8000 --gpus all qwen-image-series-svc
 ```
 
