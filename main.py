@@ -4,7 +4,7 @@ import time
 from typing import Annotated
 
 import torch
-from diffusers import DiffusionPipeline, QwenImageEditPipeline
+from diffusers import QwenImageEditPipeline, QwenImagePipeline
 from fastapi import Depends, FastAPI, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
@@ -52,7 +52,6 @@ class ImageEditService(BaseService):
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.pipeline.to(self.device)
-        print("图像编辑服务初始化完成。")
 
     def _prepare_request(self, r: dict) -> dict:
         seed = r.get("seed", 42)
@@ -75,12 +74,11 @@ class ImageGenerationService(BaseService):
     """专门用于图像生成的模型服务：Qwen-Image"""
 
     def __init__(self) -> None:
-        self.pipeline = DiffusionPipeline.from_pretrained(
+        self.pipeline = QwenImagePipeline.from_pretrained(
             "/qwen-image", torch_dtype=torch.bfloat16
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.pipeline.to(self.device)
-        print("图像生成服务初始化完成。")
 
     def _prepare_request(self, r: dict) -> dict:
         seed = r.get("seed", 42)
