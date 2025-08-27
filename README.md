@@ -20,7 +20,7 @@ Web 服务器选用 FastAPI。
 
 ```bash
 docker build -t qwen-image-service .
-docker run -p 8000:8000 --gpus all qwen-image-service
+docker run -p 8000:8000 --gpus all qwen-image-series-svc
 ```
 
 服务将在 `http://localhost:8000` 上可用。
@@ -45,7 +45,7 @@ docker run -p 8000:8000 --gpus all qwen-image-service
 docker run -p 8000:8000 \
   -e MODEL_PATH_EDIT=/custom/path/to/qwen-image-edit \
   -e MODEL_PATH_GENERATION=/custom/path/to/qwen-image \
-  --gpus all qwen-image-service
+  --gpus all qwen-image-series-svc
 ```
 
 ## API 文档
