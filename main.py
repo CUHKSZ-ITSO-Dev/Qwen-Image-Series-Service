@@ -14,32 +14,18 @@ from ray.serve.handle import DeploymentHandle
 
 
 class BaseService:
-    """封装通用批处理逻辑的基类"""
+    """封装通用单请求推理逻辑的基类"""
 
     def _prepare_request(self, request: dict) -> dict:
         """子类需要实现此方法，以准备单个请求的参数字典。"""
         raise NotImplementedError
 
-    async def _process_batch(self, requests: list[dict]) -> list[Image.Image]:
-        """通用的批处理流程。"""
-        if not requests:
-            return []
-
-        # 1. 使用子类实现的 _prepare_request 方法来准备所有请求
-        full_requests = [self._prepare_request(r) for r in requests]
-
-        # 2. 将字典列表转换为列表字典
-        keys = full_requests[0].keys()
-        batch_params = {key: [d[key] for d in full_requests] for key in keys}
-
-        # 宽、高似乎只能是固定一个数，那就只能以第一个请求为准了
-        batch_params["height"] = full_requests[0]["height"]
-        batch_params["width"] = full_requests[0]["width"]
-
-        # 3. 调用 self.pipeline (由子类提供)
+    async def _process_single(self, request: dict) -> Image.Image:
+        """通用的单请求推理流程。"""
+        params = self._prepare_request(request)
         with torch.inference_mode():
-            model_output = self.pipeline(**batch_params)
-            return model_output.images
+            model_output = self.pipeline(**params)
+            return model_output.images[0]
 
 
 @serve.deployment(ray_actor_options={"num_gpus": 1 if torch.cuda.is_available() else 0})
@@ -64,9 +50,8 @@ class ImageEditService(BaseService):
             "generator": torch.Generator(device=self.device).manual_seed(seed),
         }
 
-    @serve.batch(max_batch_size=4, batch_wait_timeout_s=8)
-    async def batch_edit(self, requests: list[dict]) -> list[Image.Image]:
-        return await self._process_batch(requests)
+    async def edit(self, request: dict) -> Image.Image:
+        return await self._process_single(request)
 
 
 @serve.deployment(ray_actor_options={"num_gpus": 1 if torch.cuda.is_available() else 0})
@@ -92,9 +77,8 @@ class ImageGenerationService(BaseService):
             "generator": torch.Generator(device=self.device).manual_seed(seed),
         }
 
-    @serve.batch(max_batch_size=4, batch_wait_timeout_s=8)
-    async def batch_generate(self, requests: list[dict]) -> list[Image.Image]:
-        return await self._process_batch(requests)
+    async def generate(self, request: dict) -> Image.Image:
+        return await self._process_single(request)
 
 
 class EditRequest(BaseModel):
@@ -163,8 +147,7 @@ class APIIngress:
         payload = request.model_dump(exclude_none=True)
         payload["image"] = init_image
 
-        result_image_list = await self.edit_deployment.batch_edit.remote(payload)
-        result_image = result_image_list[0]
+        result_image = await self.edit_deployment.edit.remote(payload)
 
         buffered = io.BytesIO()
         result_image.save(buffered, format="PNG")
@@ -179,10 +162,9 @@ class APIIngress:
         """图像生成端点"""
         request_dict = request.model_dump(exclude_none=True)
 
-        result_image_list = await self.generation_deployment.batch_generate.remote(
+        result_image = await self.generation_deployment.generate.remote(
             request_dict
         )
-        result_image = result_image_list[0]
 
         buffered = io.BytesIO()
         result_image.save(buffered, format="PNG")
