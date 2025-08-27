@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from ray import serve
 from ray.serve.handle import DeploymentHandle
 
-from .service import ImageEditService, ImageGenerationService
+from service import ImageEditService, ImageGenerationService
 
 app = FastAPI()
 
