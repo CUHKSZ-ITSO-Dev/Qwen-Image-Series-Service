@@ -19,8 +19,8 @@ Ray Server is prepared for model batch request processing.*
 You can run this service using Docker:
 
 ```bash
-docker build -t qwen-image-service .
-docker run -p 8000:8000 --gpus all qwen-image-service
+docker build -t qwen-image-series-svc .
+docker run -p 8000:8000 --gpus all qwen-image-series-svc
 ```
 
 The service will be available at `http://localhost:8000`.
@@ -45,7 +45,7 @@ The service supports the following environment variables for configuration:
 docker run -p 8000:8000 \
   -e MODEL_PATH_EDIT=/custom/path/to/qwen-image-edit \
   -e MODEL_PATH_GENERATION=/custom/path/to/qwen-image \
-  --gpus all qwen-image-service
+  --gpus all qwen-image-series-svc
 ```
 
 ## API Documentation
