@@ -16,8 +16,12 @@ Web 服务器选用 FastAPI。
 
 ## 运行服务
 
-您可以使用 Docker 来运行此服务：
+您可以使用 Docker 来运行此服务。我预构建了 linux/amd64 架构的镜像，你可以直接从 Package 中拉取并运行：
+```bash
+docker run -p 8000:8000 --gpus all ghcr.io/cuhksz-itso-dev/qwen-image-series-svc:latest
+```
 
+也可以本地构建镜像并运行：
 ```bash
 docker build -t qwen-image-series-svc .
 docker run -p 8000:8000 --gpus all qwen-image-series-svc
