@@ -16,8 +16,12 @@ Ray Server is prepared for model batch request processing.*
 
 ## Running the Service
 
-You can run this service using Docker:
+You can use Docker to run this service. I have pre-built the image for the linux/amd64 architecture, which you can directly pull from the package and run:
+```bash
+docker run -p 8000:8000 --gpus all ghcr.io/cuhksz-itso-dev/qwen-image-series-svc:latest
+```
 
+You can also build and run the image locally:
 ```bash
 docker build -t qwen-image-series-svc .
 docker run -p 8000:8000 --gpus all qwen-image-series-svc
