@@ -15,6 +15,15 @@ jobs:
       packages: write
 
     steps:
+    - name: Free disk space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: true
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
     - name: 检出代码
       uses: actions/checkout@v4
 
