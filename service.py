@@ -64,9 +64,9 @@ class ImageGenerationService(_BaseService):
         return {
             "prompt": r["prompt"],
             "negative_prompt": r.get("negative_prompt", ""),
-            "num_inference_steps": r.get("num_inference_steps", 40),
-            "width": r.get("width", 1664),
-            "height": r.get("height", 928),
+            "num_inference_steps": r.get("num_inference_steps", 30),
+            "width": r.get("width", 1024),
+            "height": r.get("height", 768),
             "true_cfg_scale": r.get("true_cfg_scale", 4.0),
             "generator": torch.Generator(device=self.device).manual_seed(seed),
         }
